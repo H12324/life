@@ -5,10 +5,13 @@
 3. Any live cell with more than three live neighbors dies, as if by overpopulation.
 4. Any dead cell with exactly three live neighbors becomes a live cell, as if by reproduction.
 */
+
 #include <iostream> // Do I want to do this in C or C++?
 #include <stdlib.h> 
 #include <time.h>
 #include "SDL.h"
+
+#define WRAP 0 // If screen wrapping is wanted
 
 // Maybe alter this so screen height is a function of cell and grid size, instead of vice versa
 const int SCREEN_WIDTH = 1080;
@@ -18,14 +21,14 @@ const int GRID_WIDTH = SCREEN_WIDTH / CELL_SIZE;
 const int GRID_HEIGHT = SCREEN_HEIGHT / CELL_SIZE;
 const int ALIVE_COLOR = 0x00FF00;//0x000000;
 const int DEAD_COLOR = 0x000000;//0xFFFFFF;
-const int SPEED = 100;
+const int SPEED = 25;
 
 void printBoard(int grid[GRID_HEIGHT][GRID_WIDTH], int tick) {
     std::cout << "Tick: " << tick << std::endl;
     for (int i = 0; i < GRID_HEIGHT; i++){
         for (int j = 0; j < GRID_WIDTH; j++) {
-            if (grid[i][j]) std::cout << "+";
-            else std::cout << "-";         
+            if (grid[i][j]) std::cout << "O";
+            else std::cout << ".";         
         }
         std::cout << std::endl;
     }
@@ -37,11 +40,11 @@ int countNeighbours(int grid[GRID_HEIGHT][GRID_WIDTH], int x, int y) {
     int offsets[8][2] =  {{-1,-1}, {-1, 0}, {-1, 1}, {0,-1}, {0,1}, {1, -1}, {1,0}, {1, 1}};
 
     for (int i = 0; i < 8; i++){
-        int x_o = x + offsets[i][0]; 
-        int y_o = y + offsets[i][1];
+        int x_o = x + offsets[i][0] + GRID_HEIGHT*WRAP;
+        int y_o = y + offsets[i][1] + GRID_WIDTH*WRAP;
 
-        if (x_o < 0 || x_o >= GRID_HEIGHT || y_o < 0 || y_o >= GRID_WIDTH) continue;
-        alive += grid[x_o][y_o];
+        //if (x_o < 0 || x_o >= GRID_HEIGHT || y_o < 0 || y_o >= GRID_WIDTH) continue;
+        alive += grid[x_o % GRID_HEIGHT][y_o % GRID_WIDTH]; // Is now torroidal array
     }
     return alive;
 }
@@ -62,6 +65,23 @@ void initRandom(int grid[][GRID_WIDTH]) {
             // Generate a random number between 0 and 1
             grid[i][j] = rand() % 2;
         }
+    }
+}
+
+void setPattern(int grid[GRID_HEIGHT][GRID_WIDTH]) {
+    // Set the cells for the Gosper glider gun pattern
+    int pattern[][2] = {
+        {1, 5}, {1, 6}, {2, 5}, {2, 6},  // First block
+        {11, 5}, {11, 6}, {11, 7}, {12, 4}, {12, 8}, {13, 3}, {13, 9}, {14, 3}, {14, 9}, {15, 6}, {16, 4}, {16, 8}, {17, 5}, {17, 6}, {17, 7}, {18, 6},  // Second block
+        {21, 3}, {21, 4}, {21, 5}, {22, 3}, {22, 4}, {22, 5}, {23, 2}, {23, 6}, {25, 1}, {25, 2}, {25, 6}, {25, 7},  // Third block
+        {35, 3}, {35, 4}, {36, 3}, {36, 4}  // Fourth block
+    };
+
+    // Set the cells in the grid according to the pattern
+    for (int i = 0; i < sizeof(pattern) / sizeof(pattern[0]); i++) {
+        int x = pattern[i][0];
+        int y = pattern[i][1];
+        grid[y][x] = 1;
     }
 }
 
@@ -127,7 +147,8 @@ int main (int argc, char* argv[]) {
     int step = 0;
     int g_size = 1;
     int grid[GRID_HEIGHT][GRID_WIDTH] = {0};
-    initRandom(grid);
+    //initRandom(grid);
+    setPattern(grid);
 
     // Main Loop
     bool running = true;
