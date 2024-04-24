@@ -6,8 +6,10 @@
 4. Any dead cell with exactly three live neighbors becomes a live cell, as if by reproduction.
 */
 #include <iostream> // Do I want to do this in C or C++?
+#include <stdlib.h> 
+#include <time.h>
 
-#define G_DIM 10
+#define G_DIM 50
 
 void printBoard(int grid[G_DIM][G_DIM], int tick) {
     std::cout << "Tick: " << tick << std::endl;
@@ -44,32 +46,45 @@ void copyGrid(int source[][G_DIM], int destination[][G_DIM]) {
     }
 }
 
-int main () {
-    int grid[G_DIM][G_DIM] = {0};
-    // Basic Tetromino Test
-    grid[1][0] = 1; grid[0][1] = 1; grid[0][2]=1;
-    // Main Loop
-    int step = 0;
-    while (true && step < 5) {
-    //
-    printBoard(grid, step);
+void initRandom(int grid[][G_DIM]) {
+    srand(time(NULL));
+    for (int i = 0; i < G_DIM; i++) {
+        for (int j = 0; j < G_DIM; j++) {
+            // Generate a random number between 0 and 1
+            grid[i][j] = rand() % 2;
+        }
+    }
+}
+
+int updateGrid(int grid[][G_DIM]) {
     // Update Rules
     int next[G_DIM][G_DIM] = {0};
+    int g_size = 0;
     for (int i = 0; i < G_DIM; i++){
         for (int j = 0; j < G_DIM; j++) {
             int live_n = countNeighbours(grid, i, j);
-            if (grid[i][j]) { // Is alive
-                //if (live_n < 2 || live_n > 3) grid[i][j] = 0;
-                if (live_n == 2 || live_n == 3) next[i][j] = 1;
-                //else grid[i][j] = 0;
-            }
-            else {
-                if (live_n == 3) next[i][j] = 1;
+            if ((grid[i][j] && (live_n == 2 || live_n == 3)) || (!grid[i][j] && (live_n == 3))) { // Is alive
+                next[i][j] = 1;
+                g_size++;
             }
         }
     }
     copyGrid(next, grid);
-    step++;
+    return g_size;
+}
+
+int main () {
+    int step = 0;
+    int g_size = 1;
+    int grid[G_DIM][G_DIM] = {0};
+    initRandom(grid);
+
+    // Main Loop
+    while (true && g_size > 0) { // Run until converges (if it will)
+        printBoard(grid, step); // Replace with visual
+        updateGrid(grid);
+        step++;
     }
+    printBoard(grid, step);
     return 0;
 }
